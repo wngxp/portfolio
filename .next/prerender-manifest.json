@@ -1,30 +1,6 @@
 {
   "version": 4,
   "routes": {
-    "/projects": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/projects",
-      "dataRoute": "/projects.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/_not-found": {
       "initialStatus": 404,
       "experimentalBypassFor": [
@@ -73,13 +49,37 @@
         "x-next-revalidated-tags",
         "x-next-revalidate-tag-token"
       ]
+    },
+    "/projects": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/projects",
+      "dataRoute": "/projects.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
     }
   },
   "dynamicRoutes": {},
   "notFoundRoutes": [],
   "preview": {
-    "previewModeId": "8868df73a2d67fa6ab8ed8ee0e34e8b0",
-    "previewModeSigningKey": "3d881fb4e7df59352b1224052aff26fe8d64219f0c13e02cc8e52a902b8fe31b",
-    "previewModeEncryptionKey": "2ee9189d4c21c7acc7a164b9772f4cee31de974a4357c60635daf40d89c6727f"
+    "previewModeId": "d17d979995d27d6b0654803f03b7bdef",
+    "previewModeSigningKey": "6c6416785fde5d710396a6e3ae59545429c8ba0404401b00fe8b9e1c7fb6a745",
+    "previewModeEncryptionKey": "e8ab3930f148edf2f4c4f46c619c9285aa0ce77b51c177f34a2bcb45b9682896"
   }
 }

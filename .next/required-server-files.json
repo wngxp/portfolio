@@ -99,7 +99,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/Users/wxp/Documents/GitHub/portfolio",
+    "outputFileTracingRoot": "/Users/wxp/dev",
     "experimental": {
       "useSkewCookie": false,
       "cacheLife": {
@@ -289,11 +289,11 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "/Users/wxp/Documents/GitHub/portfolio"
+      "root": "/Users/wxp/dev"
     }
   },
-  "appDir": "/Users/wxp/Documents/GitHub/portfolio",
-  "relativeAppDir": "",
+  "appDir": "/Users/wxp/dev/portfolio",
+  "relativeAppDir": "portfolio",
   "files": [
     ".next/routes-manifest.json",
     ".next/server/pages-manifest.json",
