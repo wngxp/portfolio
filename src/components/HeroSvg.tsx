@@ -22,6 +22,10 @@ const HEAD_RIGHT_OUTLINE_PATH =
   "M1000 774C967 714.5 913.5 711 868.5 697C820.5 682.067 675 626.5 656 614C640.5 603.803 616 596 616 555.5C616 538.71 615.5 520.167 616 502.5M500 571.5C548 568.5 544.99 563.848 579.5 534.5C643 480.5 628.5 478.5 634.5 437C639.416 403 649 397.5 651 371C652.693 348.564 651 348.5 649 336";
 const HEAD_RIM_ELLIPSE_PATH =
   "M500 308.5C541.4 308.5 578.868 311.633 605.975 316.692C619.532 319.223 630.472 322.231 638.011 325.559C641.782 327.223 644.674 328.955 646.615 330.727C648.558 332.499 649.5 334.262 649.5 336C649.5 337.738 648.558 339.501 646.615 341.273C644.674 343.045 641.782 344.777 638.011 346.441C630.472 349.769 619.532 352.777 605.975 355.308C578.868 360.367 541.4 363.5 500 363.5C458.6 363.5 421.132 360.367 394.025 355.308C380.468 352.777 369.528 349.769 361.989 346.441C358.218 344.777 355.326 343.045 353.385 341.273C351.442 339.501 350.5 337.738 350.5 336C350.5 334.262 351.442 332.499 353.385 330.727C355.326 328.955 358.218 327.223 361.989 325.559C369.528 322.231 380.468 319.223 394.025 316.692C421.132 311.633 458.6 308.5 500 308.5Z";
+const HEAD_FILL_PATH =
+  "M350 336C360 450 385 520 395 575C410 650 450 710 500 745C550 710 590 650 605 575C615 520 640 450 650 336C611 316 555 308 500 308C445 308 389 316 350 336Z";
+const FACE_PLATE_PATH =
+  "M500 388C470 388 452 418 452 468C452 522 470 560 500 579C530 560 548 522 548 468C548 418 530 388 500 388Z";
 
 function buildEdges(points: Project[]) {
   return [
@@ -156,11 +160,31 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                 <stop offset="0%" stopColor="rgba(135,215,255,0.95)" />
                 <stop offset="100%" stopColor="rgba(135,215,255,0)" />
               </radialGradient>
+              <linearGradient id="headCoreGradient" x1="500" y1="308" x2="500" y2="745" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="rgba(30,64,102,0.56)" />
+                <stop offset="50%" stopColor="rgba(18,36,64,0.5)" />
+                <stop offset="100%" stopColor="rgba(8,18,36,0.72)" />
+              </linearGradient>
+              <radialGradient id="facePlateGradient" cx="50%" cy="38%" r="62%">
+                <stop offset="0%" stopColor="rgba(146,214,255,0.18)" />
+                <stop offset="58%" stopColor="rgba(74,138,192,0.16)" />
+                <stop offset="100%" stopColor="rgba(12,26,48,0.06)" />
+              </radialGradient>
+              <radialGradient id="cavityPulseGradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="rgba(138,210,255,0.34)" />
+                <stop offset="100%" stopColor="rgba(138,210,255,0)" />
+              </radialGradient>
               <filter id="nodeSoftBlur" x="-80%" y="-80%" width="260%" height="260%">
                 <feGaussianBlur stdDeviation="4" />
               </filter>
               <filter id="headGlow" x="-40%" y="-40%" width="180%" height="180%">
                 <feGaussianBlur stdDeviation="2" />
+              </filter>
+              <filter id="headSoftBloom" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="9" />
+              </filter>
+              <filter id="headShimmerBlur" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="4.6" />
               </filter>
             </defs>
 
@@ -337,7 +361,68 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                 })}
               </motion.g>
 
-              <g className="cursor-pointer">
+              <motion.g
+                className="cursor-pointer"
+                animate={prefersReducedMotion ? { scale: 1 } : { scale: effectiveOpen ? 1.012 : 1 }}
+                transition={{ duration: 0.55, ease: "easeInOut" }}
+              >
+                <path d={HEAD_FILL_PATH} fill="url(#headCoreGradient)" />
+                <path
+                  d={HEAD_FILL_PATH}
+                  fill="none"
+                  stroke="rgba(100,160,212,0.18)"
+                  strokeWidth="1"
+                />
+                <path d={FACE_PLATE_PATH} fill="url(#facePlateGradient)" />
+                <path
+                  d="M500 404L500 578"
+                  fill="none"
+                  stroke="rgba(144,206,248,0.15)"
+                  strokeWidth="1.1"
+                />
+                <path
+                  d="M466 452C476 445 489 442 500 442C511 442 524 445 534 452"
+                  fill="none"
+                  stroke="rgba(150,212,248,0.12)"
+                  strokeWidth="1.05"
+                />
+                <path
+                  d="M477 534C485 540 494 543 500 543C506 543 515 540 523 534"
+                  fill="none"
+                  stroke="rgba(150,212,248,0.12)"
+                  strokeWidth="1.05"
+                />
+                <motion.ellipse
+                  cx={500}
+                  cy={336}
+                  rx={128}
+                  ry={30}
+                  fill="url(#cavityPulseGradient)"
+                  filter="url(#headSoftBloom)"
+                  animate={
+                    prefersReducedMotion
+                      ? { opacity: 0.3 }
+                      : {
+                          opacity: effectiveOpen ? [0.25, 0.5, 0.25] : [0.1, 0.24, 0.1],
+                          scaleX: effectiveOpen ? [0.98, 1.03, 0.98] : [0.96, 1, 0.96]
+                        }
+                  }
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.path
+                  d="M388 356C438 332 562 332 612 356"
+                  fill="none"
+                  stroke="rgba(176,230,255,0.22)"
+                  strokeWidth="1.2"
+                  filter="url(#headShimmerBlur)"
+                  animate={
+                    prefersReducedMotion
+                      ? { opacity: 0.2 }
+                      : { opacity: effectiveOpen ? [0.14, 0.32, 0.14] : [0.08, 0.2, 0.08] }
+                  }
+                  transition={{ duration: 2.3, repeat: Infinity, ease: "easeInOut" }}
+                />
+
                 <path
                   d={HEAD_LEFT_OUTLINE_PATH}
                   fill="none"
@@ -396,7 +481,7 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                     }
                   }}
                 />
-              </g>
+              </motion.g>
             </motion.g>
           </svg>
 
