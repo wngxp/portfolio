@@ -13,7 +13,7 @@ export function Header() {
             Projects
           </Link>
           <Link
-            href="https://github.com/yourusername"
+            href="https://github.com/wngxp"
             target="_blank"
             rel="noreferrer"
             className="text-slate-200 transition hover:text-cyan"
@@ -21,14 +21,14 @@ export function Header() {
             GitHub
           </Link>
           <Link
-            href="https://www.linkedin.com/in/yourusername"
+            href="https://www.linkedin.com/in/wangxp"
             target="_blank"
             rel="noreferrer"
             className="text-slate-200 transition hover:text-cyan"
           >
             LinkedIn
           </Link>
-          <Link href="mailto:you@example.com" className="text-slate-200 transition hover:text-cyan">
+          <Link href="mailto:patrick.wang@uwaterloo.ca" className="text-slate-200 transition hover:text-cyan">
             Email
           </Link>
           <Link href="/resume.pdf" className="text-slate-200 transition hover:text-cyan">
