@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
+import { glossaryMap, glossaryTerms, type GlossaryTerm } from "@/data/glossary";
 import { ProjectPanel } from "@/components/ProjectPanel";
 
 type HeroSvgProps = {
@@ -26,6 +28,8 @@ const HEAD_FILL_PATH =
   "M350 336C360 450 385 520 395 575C410 650 450 710 500 745C550 710 590 650 605 575C615 520 640 450 650 336C611 316 555 308 500 308C445 308 389 316 350 336Z";
 const FACE_PLATE_PATH =
   "M500 388C470 388 452 418 452 468C452 522 470 560 500 579C530 560 548 522 548 468C548 418 530 388 500 388Z";
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
 function buildEdges(points: Project[]) {
   return [
@@ -39,6 +43,128 @@ function buildEdges(points: Project[]) {
   ].filter(([a, b]) => points[a] && points[b]);
 }
 
+function AcronymTooltip({ acronym }: { acronym: GlossaryTerm["acronym"] }) {
+  const item = glossaryMap[acronym];
+
+  return (
+    <span className="group relative inline-block">
+      <span
+        tabIndex={0}
+        className="cursor-help rounded-sm border-b border-dotted border-cyan/70 text-cyan focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/45"
+      >
+        {acronym}
+      </span>
+      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-white/20 bg-slate-950/95 p-2 text-left text-xs text-slate-100 opacity-0 shadow-glow transition group-hover:opacity-100 group-focus-within:opacity-100">
+        <strong className="block text-cyan">{item.expanded}</strong>
+        <span className="text-slate-300">{item.definition}</span>
+      </span>
+    </span>
+  );
+}
+
+function GlossaryModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open || !modalRef.current) {
+      return;
+    }
+
+    closeRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !modalRef.current) {
+        return;
+      }
+
+      const elements = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (!elements.length) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (!active || active === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (!active || active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose, open]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.button
+            type="button"
+            aria-label="Close glossary"
+            className="fixed inset-0 z-40 bg-black/55"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="glossary-title"
+            className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/15 bg-slate-950/88 p-6 backdrop-blur-md"
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 14, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 220, damping: 22 }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 id="glossary-title" className="text-lg font-semibold text-white">
+                Glossary
+              </h2>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-white/25 px-3 py-1 text-xs text-white transition hover:border-cyan/55 hover:text-cyan"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-3">
+              {glossaryTerms.map((term) => (
+                <div key={term.acronym} className="rounded-xl border border-white/15 bg-white/5 p-3">
+                  <p className="text-sm font-semibold text-cyan">
+                    {term.acronym} <span className="font-normal text-slate-300">- {term.expanded}</span>
+                  </p>
+                  <p className="mt-1 text-sm text-slate-200">{term.definition}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export function HeroSvg({ projects }: HeroSvgProps) {
   const prefersReducedMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
@@ -46,6 +172,7 @@ export function HeroSvg({ projects }: HeroSvgProps) {
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const [mobileExplore, setMobileExplore] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [parallax, setParallax] = useState<Point>({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -125,15 +252,40 @@ export function HeroSvg({ projects }: HeroSvgProps) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/15 bg-slate-950/30 px-4 py-6 shadow-glow sm:px-6 sm:py-8">
       <div className="relative mx-auto max-w-6xl">
-        <div className="mb-4 max-w-3xl">
-          <p className="mb-2 text-xs uppercase tracking-[0.28em] text-cyan">Interactive Research Constellation</p>
-          <h1 className="mb-3 text-3xl font-semibold text-white sm:text-5xl">
-            Biomedical Engineering Portfolio: Biosignals + ML for Wearable Rehab Robotics
-          </h1>
-          <p className="text-sm leading-relaxed text-slate-300 sm:text-base">
-            Signal glossary: Electromyography (EMG), electroencephalography (EEG), inertial
-            measurement unit (IMU), convolutional neural network (CNN).
+        <div className="mb-5 max-w-2xl space-y-3">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-cyan/85 sm:text-xs">
+            Interactive Research Constellation
           </p>
+          <h1 className="text-4xl font-semibold text-white sm:text-6xl">Patrick Wang</h1>
+          <p className="text-sm text-slate-200 sm:text-base">
+            Biomedical Engineering student @ University of Waterloo
+          </p>
+          <p className="text-sm leading-relaxed text-slate-300 sm:text-base">
+            I build wearable intelligence from biosignals - <AcronymTooltip acronym="EMG" />,{" "}
+            <AcronymTooltip acronym="EEG" />, and <AcronymTooltip acronym="IMU" /> - using machine
+            learning.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Link
+              href="/projects"
+              className="rounded-full border border-cyan/60 bg-cyan/15 px-4 py-2 text-sm text-cyan transition hover:bg-cyan/25"
+            >
+              Explore Projects
+            </Link>
+            <Link
+              href="/about"
+              className="rounded-full border border-white/25 px-4 py-2 text-sm text-white transition hover:border-cyan/55 hover:text-cyan"
+            >
+              About
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsGlossaryOpen(true)}
+              className="rounded-full border border-white/25 px-4 py-2 text-sm text-white transition hover:border-cyan/55 hover:text-cyan"
+            >
+              Glossary
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pb-4 md:hidden">
@@ -196,7 +348,11 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                   cy={star.y}
                   r={star.r}
                   fill="rgba(188,222,255,0.9)"
-                  animate={prefersReducedMotion ? { opacity: star.o } : { opacity: [star.o * 0.75, star.o, star.o * 0.75] }}
+                  animate={
+                    prefersReducedMotion
+                      ? { opacity: star.o }
+                      : { opacity: [star.o * 0.75, star.o, star.o * 0.75] }
+                  }
                   transition={{ duration: 4 + (index % 5), repeat: Infinity, ease: "easeInOut" }}
                 />
               ))}
@@ -367,19 +523,9 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                 transition={{ duration: 0.55, ease: "easeInOut" }}
               >
                 <path d={HEAD_FILL_PATH} fill="url(#headCoreGradient)" />
-                <path
-                  d={HEAD_FILL_PATH}
-                  fill="none"
-                  stroke="rgba(100,160,212,0.18)"
-                  strokeWidth="1"
-                />
+                <path d={HEAD_FILL_PATH} fill="none" stroke="rgba(100,160,212,0.18)" strokeWidth="1" />
                 <path d={FACE_PLATE_PATH} fill="url(#facePlateGradient)" />
-                <path
-                  d="M500 404L500 578"
-                  fill="none"
-                  stroke="rgba(144,206,248,0.15)"
-                  strokeWidth="1.1"
-                />
+                <path d="M500 404L500 578" fill="none" stroke="rgba(144,206,248,0.15)" strokeWidth="1.1" />
                 <path
                   d="M466 452C476 445 489 442 500 442C511 442 524 445 534 452"
                   fill="none"
@@ -445,24 +591,9 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                   filter="url(#headGlow)"
                 />
 
-                <path
-                  d={HEAD_LEFT_OUTLINE_PATH}
-                  fill="none"
-                  stroke="rgba(138, 195, 247, 0.46)"
-                  strokeWidth="1.35"
-                />
-                <path
-                  d={HEAD_RIGHT_OUTLINE_PATH}
-                  fill="none"
-                  stroke="rgba(138, 195, 247, 0.46)"
-                  strokeWidth="1.35"
-                />
-                <path
-                  d={HEAD_RIM_ELLIPSE_PATH}
-                  fill="none"
-                  stroke="rgba(138, 195, 247, 0.46)"
-                  strokeWidth="1.35"
-                />
+                <path d={HEAD_LEFT_OUTLINE_PATH} fill="none" stroke="rgba(138, 195, 247, 0.46)" strokeWidth="1.35" />
+                <path d={HEAD_RIGHT_OUTLINE_PATH} fill="none" stroke="rgba(138, 195, 247, 0.46)" strokeWidth="1.35" />
+                <path d={HEAD_RIM_ELLIPSE_PATH} fill="none" stroke="rgba(138, 195, 247, 0.46)" strokeWidth="1.35" />
 
                 <motion.circle
                   role="button"
@@ -528,6 +659,8 @@ export function HeroSvg({ projects }: HeroSvgProps) {
         onClose={() => setSelectedSlug(null)}
         fullscreenOnMobile
       />
+
+      <GlossaryModal open={isGlossaryOpen} onClose={() => setIsGlossaryOpen(false)} />
     </section>
   );
 }
