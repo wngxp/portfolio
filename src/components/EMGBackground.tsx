@@ -32,6 +32,10 @@ export default function EMGBackground() {
     let pressed = false;
     let activation = 0;
     let lastTime = performance.now();
+    let sampleBuffer = new Float32Array(0);
+    let sampleCount = 0;
+    let drawStep = 2;
+    let carryPx = 0;
 
     const signalState: SignalState = { low: 0, smooth: 0 };
 
@@ -46,6 +50,13 @@ export default function EMGBackground() {
       canvas.style.height = `${height}px`;
 
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      drawStep = width < 900 ? 2 : 3;
+      sampleCount = Math.max(64, Math.ceil(width / drawStep) + 2);
+      sampleBuffer = new Float32Array(sampleCount);
+      for (let i = 0; i < sampleCount; i += 1) {
+        sampleBuffer[i] = nextSample();
+      }
     };
 
     const nextSample = () => {
@@ -69,18 +80,29 @@ export default function EMGBackground() {
 
       context.clearRect(0, 0, width, height);
 
-      const centerY = height * 0.5;
-      const xStep = 2;
-      const baselineAmplitude = Math.max(1.8, height * 0.0042);
+      const centerY = height * 0.52;
+      const baselineAmplitude = Math.max(2.1, height * 0.0048);
       const activeAmplitude = Math.max(5.5, height * 0.019);
       const amplitude = baselineAmplitude + (activeAmplitude - baselineAmplitude) * activation;
+      const speed = 72 + activation * 105;
+      carryPx += speed * dt;
+      const shiftSamples = Math.floor(carryPx / drawStep);
+      if (shiftSamples > 0) {
+        carryPx -= shiftSamples * drawStep;
+        const shift = Math.min(shiftSamples, sampleCount - 1);
+        sampleBuffer.copyWithin(0, shift);
+        for (let i = sampleCount - shift; i < sampleCount; i += 1) {
+          sampleBuffer[i] = nextSample();
+        }
+      }
 
       const glowAlpha = 0.04 + activation * 0.08;
-      const lineAlpha = 0.115 + activation * 0.085;
+      const lineAlpha = 0.14 + activation * 0.08;
 
       context.beginPath();
-      for (let x = 0; x <= width; x += xStep) {
-        const y = centerY + nextSample() * amplitude;
+      for (let i = 0; i < sampleCount; i += 1) {
+        const x = i * drawStep;
+        const y = centerY + sampleBuffer[i] * amplitude;
         if (x === 0) {
           context.moveTo(x, y);
         } else {
@@ -103,7 +125,7 @@ export default function EMGBackground() {
 
       const centerY = height * 0.5;
       const xStep = 2;
-      const amplitude = Math.max(1.6, height * 0.0042);
+      const amplitude = Math.max(1.9, height * 0.0048);
       let phaseA = 0;
       let phaseB = 1.2;
 
@@ -120,7 +142,7 @@ export default function EMGBackground() {
         }
       }
 
-      context.strokeStyle = "rgba(153, 214, 255, 0.07)";
+      context.strokeStyle = "rgba(153, 214, 255, 0.1)";
       context.lineWidth = 1;
       context.stroke();
     };
