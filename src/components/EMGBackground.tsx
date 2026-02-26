@@ -71,12 +71,12 @@ export default function EMGBackground() {
 
       const centerY = height * 0.5;
       const xStep = 2;
-      const baselineAmplitude = Math.max(1.4, height * 0.0036);
+      const baselineAmplitude = Math.max(1.8, height * 0.0042);
       const activeAmplitude = Math.max(5.5, height * 0.019);
       const amplitude = baselineAmplitude + (activeAmplitude - baselineAmplitude) * activation;
 
       const glowAlpha = 0.04 + activation * 0.08;
-      const lineAlpha = 0.09 + activation * 0.09;
+      const lineAlpha = 0.115 + activation * 0.085;
 
       context.beginPath();
       for (let x = 0; x <= width; x += xStep) {
@@ -170,7 +170,7 @@ export default function EMGBackground() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10"
+      className="pointer-events-none fixed inset-0 z-0"
     />
   );
 }
