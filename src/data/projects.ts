@@ -10,6 +10,7 @@ export type Project = {
   title: string;
   tagline: string;
   description: string;
+  previewImage?: string;
   category: ProjectCategory;
   tech: string[];
   links: {
@@ -30,6 +31,7 @@ export const projects: Project[] = [
     slug: "emg-pickerupper",
     title: "EMG PickerUpper",
     tagline: "Wearable gripper control from forearm muscle intent",
+    previewImage: "/previews/emg-pickerupper.jpg",
     description:
       "A wearable gripper concept that translates forearm bioelectric signals into open/close assistance. The pipeline includes preprocessing, intent thresholds, and simple adaptive calibration for different users. This project explores prosthetic-like extension behavior for lightweight daily assistance tasks.",
     category: "Muscle",
@@ -45,6 +47,7 @@ export const projects: Project[] = [
     slug: "emg-gait",
     title: "EMG Gait Phase",
     tagline: "Muscle-informed gait phase estimation for rehab contexts",
+    previewImage: "/previews/emg-gait.jpg",
     description:
       "A gait phase estimator combining lower-limb muscle signals with timing heuristics to infer stance and swing transitions. Designed with exoskeleton and rehab robotics contexts in mind, it prioritizes interpretable state transitions and low-latency inference. Early evaluations focus on robustness during speed variation.",
     category: "Motion",
@@ -60,6 +63,7 @@ export const projects: Project[] = [
     slug: "eeg-decoding",
     title: "EEG Decoding",
     tagline: "Neural signal decoding workflow for brain-state inference",
+    previewImage: "/previews/eeg-decoding.jpg",
     description:
       "A neural decoding prototype that maps band-limited brain signal features to cognitive-state labels. The project compares classic baselines and compact deep-learning blocks while emphasizing reproducible preprocessing. It is structured for rapid experimentation with channel selection and temporal windows.",
     category: "Neural",
@@ -75,6 +79,7 @@ export const projects: Project[] = [
     slug: "imu-cnn",
     title: "IMU-CNN Activity",
     tagline: "Activity recognition from motion sensor windows",
+    previewImage: "/previews/imu-cnn.jpg",
     description:
       "An activity recognition model using multi-axis motion sensor windows and a compact convolutional architecture. The pipeline covers segmentation, normalization, train-validation splitting, and confusion-matrix analysis. It is optimized for practical deployment constraints in wearables.",
     category: "Applied ML",
@@ -90,6 +95,7 @@ export const projects: Project[] = [
     slug: "bio322",
     title: "BIO322 Mouse Classifier",
     tagline: "Course project for structured biological classification",
+    previewImage: "/previews/bio322.jpg",
     description:
       "A supervised classification pipeline for mouse-related dataset labels developed in a biomedical coursework setting. It includes feature cleaning, baseline model comparison, and explainability checks to understand prediction drivers. The implementation is framed as a production-style applied ML workflow.",
     category: "Applied ML",
@@ -105,6 +111,7 @@ export const projects: Project[] = [
     slug: "food-aging",
     title: "Food Aging Forecast",
     tagline: "Quality prediction model for shelf-life estimation",
+    previewImage: "/previews/food-aging.jpg",
     description:
       "A machine-learning study forecasting food quality changes over time from sensor and metadata features. The project focuses on data integrity, leakage prevention, and realistic evaluation splits to reflect operational conditions. Results are presented with calibration-aware confidence reporting.",
     category: "Applied ML",

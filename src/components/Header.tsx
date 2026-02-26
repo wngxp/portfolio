@@ -53,6 +53,9 @@ export function Header() {
           <Link href="/projects" className="text-slate-200 transition hover:text-cyan">
             Projects
           </Link>
+          <Link href="/about" className="text-slate-200 transition hover:text-cyan">
+            About
+          </Link>
           <Link
             href="https://github.com/wngxpp"
             target="_blank"

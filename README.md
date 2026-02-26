@@ -27,17 +27,28 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## How to add a project
 
-Edit [`src/data/projects.ts`](/Users/wxp/Documents/GitHub/portfolio/src/data/projects.ts). This file is the single source of truth.
+Edit [`src/data/projects.ts`](/Users/wxp/dev/portfolio/src/data/projects.ts). This file is the single source of truth.
 
 1. Add a new object to the `projects` array using the `Project` model.
 2. Set `featured` to control homepage cards.
 3. Set `showInConstellation` to control hero nodes (recommended max 6-7).
 4. Add `node` coordinates (`x`, `y` in `0..1`) for constellation layout.
 5. Optional links: `github`, `demo`.
+6. Optional hover preview image: `previewImage: "/previews/<slug>.jpg"`.
 
 All pages (`/`, `/projects`, `/projects/[slug]`) update automatically.
+
+## Preview Images
+
+- Put preview thumbnails in `public/previews/`.
+- Recommended dimensions: `1280x720` (preferred) or `960x540`.
+- The node hover preview card uses `next/image` and falls back to a styled placeholder when `previewImage` is omitted.
 
 ## Notes
 
 - Place your resume at `public/resume.pdf`.
-- Replace placeholder social links and email in `src/components/Header.tsx` and `src/app/page.tsx`.
+- If `.next` was accidentally tracked before, stop tracking it with:
+
+```bash
+git rm -r --cached .next && git commit -m "Stop tracking .next"
+```

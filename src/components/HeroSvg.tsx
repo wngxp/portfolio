@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
 import { glossaryMap, glossaryTerms, type GlossaryTerm } from "@/data/glossary";
 import { ProjectPanel } from "@/components/ProjectPanel";
@@ -15,6 +16,11 @@ type HeroSvgProps = {
 type Point = {
   x: number;
   y: number;
+};
+
+type PreviewPosition = {
+  left: number;
+  top: number;
 };
 
 const ORIGIN: Point = { x: 500, y: 340 };
@@ -30,6 +36,25 @@ const FACE_PLATE_PATH =
   "M500 388C470 388 452 418 452 468C452 522 470 560 500 579C530 560 548 522 548 468C548 418 530 388 500 388Z";
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
+const PREVIEW_OPEN_DELAY_MS = 100;
+const PREVIEW_CLOSE_DELAY_MS = 110;
+
+const PreviewImageFallback = memo(function PreviewImageFallback({
+  title
+}: {
+  title: string;
+}) {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-400/25 via-sky-500/10 to-slate-950/70">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(148,226,255,0.32),transparent_56%)]" />
+      <div className="relative flex items-center gap-2 rounded-full border border-white/20 bg-slate-950/45 px-3 py-1.5 text-xs text-slate-200">
+        <span className="inline-block h-2 w-2 rounded-full bg-cyan-300/90 shadow-[0_0_10px_rgba(125,222,255,0.9)]" />
+        <span className="truncate">{title}</span>
+      </div>
+    </div>
+  );
+});
 
 function buildEdges(points: Project[]) {
   return [
@@ -167,9 +192,18 @@ function GlossaryModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export function HeroSvg({ projects }: HeroSvgProps) {
   const prefersReducedMotion = useReducedMotion();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const previewCardRef = useRef<HTMLButtonElement>(null);
+  const openPreviewTimeoutRef = useRef<number | null>(null);
+  const closePreviewTimeoutRef = useRef<number | null>(null);
+  const hoveredNodeSlugRef = useRef<string | null>(null);
+  const isPreviewCardActiveRef = useRef(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
-  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+  const [hoveredNodeSlug, setHoveredNodeSlug] = useState<string | null>(null);
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  const [isPreviewCardActive, setIsPreviewCardActive] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState<PreviewPosition | null>(null);
   const [mobileExplore, setMobileExplore] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
@@ -191,6 +225,11 @@ export function HeroSvg({ projects }: HeroSvgProps) {
       r: project.node.r ?? 12
     }));
   }, [projects]);
+
+  const pointBySlug = useMemo(
+    () => new Map(points.map((point) => [point.slug, point])),
+    [points]
+  );
 
   const stars = useMemo(
     () => [
@@ -223,8 +262,175 @@ export function HeroSvg({ projects }: HeroSvgProps) {
     () => projects.find((project) => project.slug === selectedSlug) ?? null,
     [projects, selectedSlug]
   );
+  const previewProject = useMemo(
+    () => projects.find((project) => project.slug === previewSlug) ?? null,
+    [projects, previewSlug]
+  );
 
   const effectiveOpen = prefersReducedMotion ? true : isOpen;
+
+  const clearPreviewTimeout = useCallback(() => {
+    if (closePreviewTimeoutRef.current !== null) {
+      window.clearTimeout(closePreviewTimeoutRef.current);
+      closePreviewTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearOpenPreviewTimeout = useCallback(() => {
+    if (openPreviewTimeoutRef.current !== null) {
+      window.clearTimeout(openPreviewTimeoutRef.current);
+      openPreviewTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetPreviewState = useCallback(() => {
+    clearPreviewTimeout();
+    clearOpenPreviewTimeout();
+    setHoveredNodeSlug(null);
+    setPreviewSlug(null);
+    setIsPreviewCardActive(false);
+    setPreviewPosition(null);
+  }, [clearOpenPreviewTimeout, clearPreviewTimeout]);
+
+  const schedulePreviewClose = useCallback(
+    () => {
+      clearPreviewTimeout();
+      closePreviewTimeoutRef.current = window.setTimeout(() => {
+        if (isPreviewCardActiveRef.current || hoveredNodeSlugRef.current) {
+          return;
+        }
+        setPreviewSlug(null);
+        setPreviewPosition(null);
+      }, PREVIEW_CLOSE_DELAY_MS);
+    },
+    [clearPreviewTimeout]
+  );
+
+  const queuePreviewOpen = useCallback(
+    (slug: string) => {
+      clearPreviewTimeout();
+      clearOpenPreviewTimeout();
+      openPreviewTimeoutRef.current = window.setTimeout(() => {
+        setPreviewSlug(slug);
+      }, PREVIEW_OPEN_DELAY_MS);
+    },
+    [clearOpenPreviewTimeout, clearPreviewTimeout]
+  );
+
+  const updatePreviewPosition = useCallback(() => {
+    if (!previewSlug || !svgRef.current) {
+      setPreviewPosition(null);
+      return;
+    }
+
+    const point = pointBySlug.get(previewSlug);
+    if (!point) {
+      setPreviewPosition(null);
+      return;
+    }
+
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const nodeX = (effectiveOpen ? point.px : ORIGIN.x) + parallax.x;
+    const nodeY = (effectiveOpen ? point.py : ORIGIN.y) + parallax.y;
+    const viewportX = svgRect.left + (nodeX / 1000) * svgRect.width;
+    const viewportY = svgRect.top + (nodeY / 800) * svgRect.height;
+
+    const cardRect = previewCardRef.current?.getBoundingClientRect();
+    const cardWidth = cardRect?.width ?? 336;
+    const cardHeight = cardRect?.height ?? 236;
+    const edgePadding = 12;
+    const offset = 18;
+    const safetyRadius = 24;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const horizontalPreferred =
+      viewportX >= viewportWidth * 0.62 ? "left" : viewportX <= viewportWidth * 0.38 ? "right" : "right";
+    const verticalPreferred = viewportY <= viewportHeight * 0.32 ? "below" : "above";
+
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+    const positionFor = (horizontal: "left" | "right", vertical: "above" | "below") => {
+      const baseLeft = horizontal === "right" ? viewportX + offset : viewportX - cardWidth - offset;
+      const baseTop = vertical === "below" ? viewportY + offset : viewportY - cardHeight - offset;
+      return {
+        left: clamp(baseLeft, edgePadding, viewportWidth - cardWidth - edgePadding),
+        top: clamp(baseTop, edgePadding, viewportHeight - cardHeight - edgePadding)
+      };
+    };
+
+    const overlapsNode = ({ left, top }: PreviewPosition) => {
+      return (
+        viewportX >= left - safetyRadius &&
+        viewportX <= left + cardWidth + safetyRadius &&
+        viewportY >= top - safetyRadius &&
+        viewportY <= top + cardHeight + safetyRadius
+      );
+    };
+
+    const candidates: PreviewPosition[] = [
+      positionFor(horizontalPreferred, verticalPreferred),
+      positionFor(horizontalPreferred, verticalPreferred === "below" ? "above" : "below"),
+      positionFor(horizontalPreferred === "right" ? "left" : "right", verticalPreferred),
+      positionFor(
+        horizontalPreferred === "right" ? "left" : "right",
+        verticalPreferred === "below" ? "above" : "below"
+      )
+    ];
+
+    const resolved = candidates.find((candidate) => !overlapsNode(candidate)) ?? candidates[0];
+    setPreviewPosition(resolved);
+  }, [effectiveOpen, parallax.x, parallax.y, pointBySlug, previewSlug]);
+
+  useEffect(() => {
+    if (!previewSlug || isMobile || !effectiveOpen) {
+      setPreviewPosition(null);
+      return;
+    }
+    updatePreviewPosition();
+  }, [effectiveOpen, isMobile, previewSlug, updatePreviewPosition]);
+
+  useEffect(() => {
+    if (!previewSlug || isMobile || !effectiveOpen) {
+      return;
+    }
+    const handleViewportChange = () => updatePreviewPosition();
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [effectiveOpen, isMobile, previewSlug, updatePreviewPosition]);
+
+  useEffect(() => {
+    return () => clearPreviewTimeout();
+  }, [clearPreviewTimeout]);
+
+  useEffect(() => {
+    return () => clearOpenPreviewTimeout();
+  }, [clearOpenPreviewTimeout]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetPreviewState();
+    }
+  }, [isOpen, resetPreviewState]);
+
+  const handleNodeEnter = (slug: string) => {
+    hoveredNodeSlugRef.current = slug;
+    setHoveredNodeSlug(slug);
+    queuePreviewOpen(slug);
+  };
+
+  const handleNodeLeave = (slug: string) => {
+    hoveredNodeSlugRef.current = null;
+    setHoveredNodeSlug((prev) => (prev === slug ? null : prev));
+    clearOpenPreviewTimeout();
+    if (!isPreviewCardActiveRef.current) {
+      schedulePreviewClose();
+    }
+  };
 
   const handleHeadToggle = () => {
     if (prefersReducedMotion || isMobile) {
@@ -233,6 +439,7 @@ export function HeroSvg({ projects }: HeroSvgProps) {
     setIsOpen((prev) => !prev);
     if (isOpen) {
       setSelectedSlug(null);
+      resetPreviewState();
     }
   };
 
@@ -301,6 +508,7 @@ export function HeroSvg({ projects }: HeroSvgProps) {
 
         <div className={clsx("relative", isMobile ? "h-[340px]" : "h-[540px]")}>
           <svg
+            ref={svgRef}
             viewBox="0 0 1000 800"
             className="h-full w-full"
             aria-label="Project constellation"
@@ -428,7 +636,7 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                 })}
 
                 {points.map((point, index) => {
-                  const isHovered = hoveredSlug === point.slug;
+                  const isHovered = hoveredNodeSlug === point.slug || previewSlug === point.slug;
 
                   return (
                     <motion.g
@@ -444,6 +652,15 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                         stiffness: 170,
                         damping: 20,
                         delay: index * 0.07
+                      }}
+                      onMouseEnter={() => handleNodeEnter(point.slug)}
+                      onMouseLeave={() => handleNodeLeave(point.slug)}
+                      onFocusCapture={() => handleNodeEnter(point.slug)}
+                      onBlurCapture={(event) => {
+                        if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                          return;
+                        }
+                        handleNodeLeave(point.slug);
                       }}
                     >
                       <motion.circle
@@ -475,10 +692,6 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                             : { scale: isHovered ? 1.06 : [1, 0.985, 1] }
                         }
                         transition={{ duration: isHovered ? 0.2 : 2.4, repeat: isHovered ? 0 : Infinity }}
-                        onMouseEnter={() => setHoveredSlug(point.slug)}
-                        onMouseLeave={() => setHoveredSlug((prev) => (prev === point.slug ? null : prev))}
-                        onFocus={() => setHoveredSlug(point.slug)}
-                        onBlur={() => setHoveredSlug((prev) => (prev === point.slug ? null : prev))}
                         onClick={() => setSelectedSlug(point.slug)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
@@ -487,31 +700,6 @@ export function HeroSvg({ projects }: HeroSvgProps) {
                           }
                         }}
                       />
-
-                      <AnimatePresence>
-                        {isHovered && effectiveOpen && (
-                          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            <rect
-                              x={ORIGIN.x + 18}
-                              y={ORIGIN.y - 34}
-                              rx={8}
-                              width={Math.max(150, point.title.length * 8.3)}
-                              height={28}
-                              fill="rgba(5, 11, 25, 0.9)"
-                              stroke="rgba(133, 214, 255, 0.5)"
-                            />
-                            <text
-                              x={ORIGIN.x + 28}
-                              y={ORIGIN.y - 16}
-                              fill="#dcefff"
-                              fontSize="12"
-                              letterSpacing="0.02em"
-                            >
-                              {point.title}
-                            </text>
-                          </motion.g>
-                        )}
-                      </AnimatePresence>
                     </motion.g>
                   );
                 })}
@@ -621,6 +809,80 @@ export function HeroSvg({ projects }: HeroSvgProps) {
               Click the head to {isOpen ? "close" : "open"} explore mode
             </div>
           )}
+
+          <AnimatePresence>
+            {previewProject && previewPosition && effectiveOpen && !isMobile && (
+              <div className="pointer-events-none fixed inset-0 z-40">
+                <motion.button
+                  ref={previewCardRef}
+                  type="button"
+                  aria-label={`Open ${previewProject.title} details`}
+                  className="pointer-events-auto fixed w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-white/20 bg-slate-950/68 text-left shadow-[0_20px_60px_rgba(3,12,30,0.55)] backdrop-blur-xl"
+                  style={{ left: previewPosition.left, top: previewPosition.top }}
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  onMouseEnter={() => {
+                    clearPreviewTimeout();
+                    isPreviewCardActiveRef.current = true;
+                    setIsPreviewCardActive(true);
+                  }}
+                  onMouseLeave={() => {
+                    isPreviewCardActiveRef.current = false;
+                    setIsPreviewCardActive(false);
+                    if (!hoveredNodeSlugRef.current) {
+                      schedulePreviewClose();
+                    }
+                  }}
+                  onFocus={() => {
+                    clearPreviewTimeout();
+                    isPreviewCardActiveRef.current = true;
+                    setIsPreviewCardActive(true);
+                  }}
+                  onBlur={() => {
+                    isPreviewCardActiveRef.current = false;
+                    setIsPreviewCardActive(false);
+                    if (!hoveredNodeSlugRef.current) {
+                      schedulePreviewClose();
+                    }
+                  }}
+                  onClick={() => setSelectedSlug(previewProject.slug)}
+                >
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="relative aspect-video w-full overflow-hidden border-b border-white/10 sm:w-[46%] sm:border-b-0 sm:border-r">
+                      {previewProject.previewImage ? (
+                        <Image
+                          src={previewProject.previewImage}
+                          alt={`${previewProject.title} preview`}
+                          fill
+                          sizes="(max-width: 640px) calc(100vw - 2rem), 180px"
+                          className="object-cover"
+                          priority={false}
+                        />
+                      ) : (
+                        <PreviewImageFallback title={previewProject.title} />
+                      )}
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
+                      <p className="text-sm font-semibold text-white">{previewProject.title}</p>
+                      <p className="truncate text-xs text-slate-300">{previewProject.tagline}</p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {previewProject.tech.slice(0, 3).map((tech) => (
+                          <span
+                            key={`${previewProject.slug}-${tech}`}
+                            className="rounded-full border border-cyan/35 bg-cyan/10 px-2 py-0.5 text-[10px] text-cyan"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
 
         <AnimatePresence>
