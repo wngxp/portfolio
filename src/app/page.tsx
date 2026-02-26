@@ -47,11 +47,11 @@ export default function HomePage() {
           <h2 className="mb-3 text-2xl font-semibold text-white">Let&apos;s Build</h2>
           <p className="mb-4 text-slate-200">Open to research collaborations, co-op opportunities, and technical discussions.</p>
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="mailto:you@example.com" className="rounded-full border border-white/25 px-4 py-2 text-white hover:border-cyan/60 hover:text-cyan">
-              you@example.com
+            <Link href="mailto:patrick.wang@uwaterloo.ca" className="rounded-full border border-white/25 px-4 py-2 text-white hover:border-cyan/60 hover:text-cyan">
+              patrick.wang@uwaterloo.ca
             </Link>
             <Link
-              href="https://github.com/yourusername"
+              href="https://github.com/wngxpp"
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-white/25 px-4 py-2 text-white hover:border-cyan/60 hover:text-cyan"
@@ -59,7 +59,7 @@ export default function HomePage() {
               GitHub
             </Link>
             <Link
-              href="https://www.linkedin.com/in/yourusername"
+              href="https://www.linkedin.com/in/wangxp"
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-white/25 px-4 py-2 text-white hover:border-cyan/60 hover:text-cyan"
