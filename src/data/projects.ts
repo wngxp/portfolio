@@ -35,7 +35,7 @@ export const projects: Project[] = [
     category: "Muscle",
     tech: ["Python", "Signal Processing", "Embedded C", "Wearables"],
     links: {
-      github: "https://github.com/yourusername/emg-pickerupper"
+      github: "https://github.com/wngxpp/pickerupper"
     },
     featured: true,
     showInConstellation: true,
@@ -50,7 +50,7 @@ export const projects: Project[] = [
     category: "Motion",
     tech: ["Python", "Time Series", "State Machines", "Rehab Robotics"],
     links: {
-      github: "https://github.com/yourusername/emg-gait"
+      github: "https://github.com/wngxpp/emg-gait"
     },
     featured: true,
     showInConstellation: true,
@@ -65,7 +65,7 @@ export const projects: Project[] = [
     category: "Neural",
     tech: ["PyTorch", "Feature Engineering", "Jupyter", "Neural Decoding"],
     links: {
-      github: "https://github.com/yourusername/eeg-decoding"
+      github: "https://github.com/wngxpp/eeg-decoding"
     },
     featured: true,
     showInConstellation: true,
@@ -80,7 +80,7 @@ export const projects: Project[] = [
     category: "Applied ML",
     tech: ["TensorFlow", "CNN", "IMU", "Model Evaluation"],
     links: {
-      github: "https://github.com/yourusername/imu-cnn"
+      github: "https://github.com/wngxpp/hartutorial"
     },
     featured: true,
     showInConstellation: true,
@@ -95,7 +95,7 @@ export const projects: Project[] = [
     category: "Applied ML",
     tech: ["scikit-learn", "Pandas", "XGBoost", "Data Validation"],
     links: {
-      github: "https://github.com/yourusername/bio322"
+      github: "https://github.com/wngxpp/bio322"
     },
     featured: true,
     showInConstellation: true,
@@ -110,7 +110,7 @@ export const projects: Project[] = [
     category: "Applied ML",
     tech: ["Python", "Regression", "Calibration", "MLOps Basics"],
     links: {
-      github: "https://github.com/yourusername/food-aging"
+      github: "https://github.com/wngxpp/food-aging"
     },
     featured: false,
     showInConstellation: false,
