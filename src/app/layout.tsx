@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import EMGBackground from "@/components/EMGBackground";
+import NeuralFieldBackground from "@/components/NeuralFieldBackground";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="relative isolate overflow-x-hidden">
-        <EMGBackground />
+        <NeuralFieldBackground />
         <div className="relative z-10">{children}</div>
       </body>
     </html>
